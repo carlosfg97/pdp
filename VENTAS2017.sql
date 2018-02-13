@@ -1,5 +1,6 @@
 use DATALAB
 
+drop table ventas2017
 select PKEbelista, AnioCampana,  
 sum([RealUUVendidas]) as RealUUVendidas,
 sum([RealUUFaltantes]) as RealUUFaltantes,
@@ -14,8 +15,8 @@ from DWH_ANALITICO.DBO.DWH_FVTAPROEBECAM
 where CodPais = 'PE' and AnioCampana = AnioCampanaRef and AnioCampana > 201700 and AnioCampana < 201800
 group by PKEbelista, AnioCampana
 
-select * 
-from DWH_ANALITICO.DBO.DWH_FSTAEBECAM
+select * from ventas2017
+
 
 drop table #listaPk
 select distinct PKEbelista into #ListaPk from Ventas2017
@@ -32,6 +33,7 @@ select a.* into #muestraperu from ventas2017 a
 inner join #MuestraDePk b on a.PKEbelista=b.PKEbelista
 order by a.PKEbelista, AnioCampana
 --217746 rows
+select * from #muestraperu
 
 select PKEbelista, AnioCampana, RealVtaMNNeto 
 from #muestraperu
@@ -43,8 +45,11 @@ from #muestraperu
 group by AnioCampana
 order by AnioCampana
 
+drop table pdp
 select *, total_ventas/total_pedidos as p$p
 into pdp
 from #pdp
+
+select * from pdp
 --podria ser que empiezar a disminuir su venta cuando entran nuevas consultoras cerca a ella
 
