@@ -4,10 +4,63 @@ use DATALAB
 
 --obteniendo muestra de PK
 drop table #ListaPk
-SELECT distinct PKEbelista, CodPais into #ListaPk
+SELECT distinct PKEbelista into #ListaPk
 FROM [DWH_ANALITICO].[dbo].[DWH_FSTAEBECAM]
-where CodPais = 'PE' AND AnioCampana = '201609'
+where CodPais = 'GT' AND AnioCampana in ('201607', '201608','201609','201610','201611','201612','201613', '201614')
+
+select * from #ListaPk
 --(1439202 row(s) affected)
+
+
+
+drop table #ventas2017
+select PkEbelista, sum(RealVtaMNNETO) as venta, sum(RealAnulMNNeto) as anulada,  sum(RealVtaMNNETO) - sum(RealAnulMNNeto) as total
+into #ventas2017
+from [DWH_ANALITICO].[dbo].[DWH_FVTAPROEBECAM]
+where CodPais = 'GT' AND AnioCampana in ('201707', '201708','201709','201710','201711','201712','201713', '201714')
+group by PKEbelista
+having sum(RealVtaMNNETO) > 0
+
+
+
+
+select PKEbelista, AnioCampana, sum(RealVtaMNNeto)
+from [DWH_ANALITICO].[dbo].[DWH_FVTAPROEBECAM]
+where CodPais = 'GT' AND AnioCampana in ('201707', '201708','201709','201710','201711','201712','201713', '201714')
+group by PKEbelista, AnioCampana
+order by PKEbelista
+
+
+
+drop table #ventas2016
+select PkEbelista, sum(RealVtaMNNETO) as venta, sum(RealAnulMNNeto) as anulada,  sum(RealVtaMNNETO) - sum(RealAnulMNNeto) as total
+into #ventas2016
+from [DWH_ANALITICO].[dbo].[DWH_FVTAPROEBECAM]
+where CodPais = 'GT' AND AnioCampana in ('201607', '201608','201609','201610','201611','201612','201613', '201614')
+group by PKEbelista
+having sum(RealVtaMNNETO) > 0
+
+
+select avg(total) from #ventas2017
+
+select avg(total) from #ventas2016
+
+
+
+
+
+
+
+
+
+select * from [DWH_ANALITICO].[dbo].[DWH_FSTAEBECAM] where CodPais = 'GT' 
+-- AND AnioCampana = '201609' 
+order by PKEbelista, FlagPasoPedido
+
+select * from #ListaPk
+
+select distinct CodPais
+from [DWH_ANALITICO].[dbo].[DWH_FSTAEBECAM]
 
 
 drop table #MuestraDePk
