@@ -5,8 +5,9 @@ select CodPais, AnioCampana, PkEbelista, CodComportamientoRolling into #cosechae
 from  [DWH_ANALITICO].DBO.DWH_FSTAEBECAM
 where CodPais = 'GT'  and AnioCampana = '201713' and CodComportamientoRolling in (2, 3,4,5,6,7) 
 
+
 drop table #vtas3camp
-select a.PkEbelista, a.AnioCampana, sum(RealVtaMNNeto) as vta
+select a.PkEbelista, a.AnioCampana, sum(RealVtaMNNeto/Realtcpromedio) as vta
 into #vtas3camp
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_FSTAEBECAM b  on a.PkEbelista = b.PkEBELISTA and a.CodPais = b.CodPais
 inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA c on  a.PKTipoOferta = c.PKTipoOferta  and a.CodPais = c.CodPais 
@@ -34,32 +35,47 @@ FROM
 ) AS SourceTable PIVOT(AVG([vta]) FOR [AnioCampana] IN([201711],
 [201712], [201713], [201715] )) AS PivotTable
 
-select * from #vtasTrasp
 
-drop table #ventascons										
-select * into #ventascons from #vtasTrasp where 
+drop table #ventascons1										
+select * into #ventascons1 from #vtasTrasp where 
 v201711 is not null and
 v201712 is not null
 and  v201713 is not null and  v201715 is not null
 
+
+
+drop table #ventascons
+select *,
+case
+when (v201713 + v201711 + v201712)/3 > v201715
+and (v201715/v201713 -1 )*100 < -10 then 1
+else 0 
+end as [Target] into #ventascons
+from #ventascons1
+
 select * from #ventascons
-  
+
+
 
 ---------VAR 2-----------
+drop table #pedidos_ult_18camp
 select b.PkEBELISTA, sum(FlagPasoPedido) as Pedidos_ult_18camp into #pedidos_ult_18camp
 from #ventascons a inner join [DWH_ANALITICO].DBO.DWH_FSTAEBECAM b on a.PkEbelista = b.PkEbelista
 where b.AnioCampana in ('201713','201712','201711','201710','201709','201708','201707','201706','201705',
 '201704','201703','201702','201701','201618','201617','201616','201615','201614') and CodPais = 'GT'
 group by b.Pkebelista 
 
+drop table #var2
 select b.*, a.Pedidos_ult_18camp into #var2
 from #pedidos_ult_18camp a inner join #ventascons b on a.PKEbelista =b.PKEbelista
+
+select * from #var2
 
 ---------VAR 3-----------
 
 
 drop table #PMNPañoanterior
-select a.PkEbelista, sum(RealVtaMNNeto) as vta, count(distinct a.AnioCampana) as CampañaPasoPedido, sum(RealVtaMNNeto)/count(distinct a.AnioCampana) as PMNP into #PMNPañoanterior
+select a.PkEbelista, sum(RealVtaMNNeto/Realtcpromedio) as vta, count(distinct a.AnioCampana) as CampañaPasoPedido, sum(RealVtaMNNeto/Realtcpromedio)/count(distinct a.AnioCampana) as PDP into #PMNPañoanterior
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_FSTAEBECAM b  on a.PkEbelista = b.PkEBELISTA and a.CodPais = b.CodPais
 inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA c on  a.PKTipoOferta = c.PKTipoOferta  and a.CodPais = c.CodPais 
 inner join #ventascons d on a.PKEbelista =d.PKEbelista
@@ -74,7 +90,7 @@ order by PkEBelista
 select * from #PMNPañoanterior
 
 drop table #decilañoanterior
-select PkEbelista, Ntile (10) over (order by PMNP desc) as [Decil], PMNP as PMNPAñoAnterior into #decilañoanterior
+select PkEbelista, Ntile (10) over (order by PDP desc) as [Decil], PDP as PDPAñoAnterior into #decilañoanterior
 FROM #PMNPañoanterior
 
 drop table #decil
@@ -85,10 +101,11 @@ from #ventascons a  left join #decilañoanterior b on a.PKEbelista = b.pkebelista
 select b.*, a.Decil as DecilAñoAnterior, a.PMNPAñoAnterior into #var3
 from #decil a inner join #var2 b on b.PKEbelista = a.PKEbelista
 
+select * from #var3
 
 ---------VAR 4-----------
 drop table #PMNPCampanterior
-select a.PkEbelista, sum(RealVtaMNNeto) as vta, count(distinct a.AnioCampana) as CampañaPasoPedido, sum(RealVtaMNNeto)/count(distinct a.AnioCampana) as PMNP into #PMNPCampanterior
+select a.PkEbelista, sum(RealVtaMNNeto/Realtcpromedio) as vta, count(distinct a.AnioCampana) as CampañaPasoPedido, sum(RealVtaMNNeto/Realtcpromedio)/count(distinct a.AnioCampana) as PMNP into #PMNPCampanterior
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_FSTAEBECAM b  on a.PkEbelista = b.PkEBELISTA and a.CodPais = b.CodPais
 inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA c on  a.PKTipoOferta = c.PKTipoOferta  and a.CodPais = c.CodPais 
 inner join #ventascons d on a.PKEbelista =d.PKEbelista
@@ -138,7 +155,7 @@ from #MCTTrasp a inner join #var4 b on b.PKEbelista = a.PKEbelista
 
 ---------VAR 6-----------
 drop table #PPU
-select  a.PKEbelista, AnioCampana, count(RealVtaMNNeto) as qprod, sum(RealVtaMNNeto) as vta, sum(RealVtaMNNeto)/count(RealVtaMNNeto) as PPU into #PPU
+select  a.PKEbelista, AnioCampana, count(RealVtaMNNeto) as qprod, sum(RealVtaMNNeto/Realtcpromedio) as vta, sum(RealVtaMNNeto/Realtcpromedio)/count(RealVtaMNNeto) as PPU into #PPU
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA b on a.PKTipoOferta = b.PKTipoOferta  and a.CodPais = b.CodPais
 inner join #ventascons d on a.PKEbelista = d.PKEbelista 
 where a.CodPais = 'GT'  and AnioCampana in ('201713','201712','201711') and AnioCampana = AnioCampanaRef and CodTipoProfit = '01' and RealVtaMNNeto > 0
@@ -218,6 +235,7 @@ inner join #var9 c on c.PKEbelista = b.PKEbelista
 select * from #var10
 
 ---------VAR 11-----------
+drop table CR_INPUT1_PDP
 select b.*, a.FechaNacimiento into CR_INPUT1_PDP
 from [DWH_ANALITICO].DBO.DWH_DEBELISTA a inner join #var10 b on a.PKEbelista = b.PKEbelista 
 where CodPais = 'GT'
