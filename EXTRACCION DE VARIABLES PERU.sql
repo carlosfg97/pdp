@@ -3,7 +3,7 @@
 drop table #cosechaestablecidas
 select CodPais, AnioCampana, PkEbelista, CodComportamientoRolling into #cosechaestablecidas
 from  [DWH_ANALITICO].DBO.DWH_FSTAEBECAM
-where CodPais = 'GT'  and AnioCampana = '201713' and CodComportamientoRolling in (2, 3,4,5,6,7) 
+where CodPais = 'PE'  and AnioCampana = '201713' and CodComportamientoRolling in (2, 3,4,5,6,7) 
 
 
 drop table #vtas3camp
@@ -11,7 +11,8 @@ select a.PkEbelista, a.AnioCampana, sum(RealVtaMNNeto/Realtcpromedio) as vta
 into #vtas3camp
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_FSTAEBECAM b  on a.PkEbelista = b.PkEBELISTA and a.CodPais = b.CodPais
 inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA c on  a.PKTipoOferta = c.PKTipoOferta  and a.CodPais = c.CodPais 
-where a.CodPais = 'GT' 
+where a.CodPais = 'PE' 
+and RealVtaMNNeto > 0
 and a.PkEbelista in (select PkEbelista from #cosechaestablecidas)
 and CodTipoProfit = '01'
 and a.AnioCampana in ('201711', '201712', '201713', '201715')
@@ -62,7 +63,7 @@ drop table #pedidos_ult_18camp
 select b.PkEBELISTA, sum(FlagPasoPedido) as Pedidos_ult_18camp into #pedidos_ult_18camp
 from #ventascons a inner join [DWH_ANALITICO].DBO.DWH_FSTAEBECAM b on a.PkEbelista = b.PkEbelista
 where b.AnioCampana in ('201713','201712','201711','201710','201709','201708','201707','201706','201705',
-'201704','201703','201702','201701','201618','201617','201616','201615','201614') and CodPais = 'GT'
+'201704','201703','201702','201701','201618','201617','201616','201615','201614') and CodPais = 'PE'
 group by b.Pkebelista 
 
 drop table #var2
@@ -79,7 +80,7 @@ select a.PkEbelista, sum(RealVtaMNNeto/Realtcpromedio) as vta, count(distinct a.
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_FSTAEBECAM b  on a.PkEbelista = b.PkEBELISTA and a.CodPais = b.CodPais
 inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA c on  a.PKTipoOferta = c.PKTipoOferta  and a.CodPais = c.CodPais 
 inner join #ventascons d on a.PKEbelista =d.PKEbelista
-where a.CodPais = 'GT' 
+where a.CodPais = 'PE' 
 and CodTipoProfit = '01'
 and a.AnioCampana in ('201701','201618','201617','201616','201615','201614','201613')
 and a.AnioCampana = a.AnioCampanaRef
@@ -94,11 +95,11 @@ select PkEbelista, Ntile (10) over (order by PDP desc) as [Decil], PDP as PDPAño
 FROM #PMNPañoanterior
 
 drop table #decil
-select a.*, b.PMNPAñoAnterior, b.Decil into #decil
+select a.*, b.PDPAñoAnterior, b.Decil into #decil
 from #ventascons a  left join #decilañoanterior b on a.PKEbelista = b.pkebelista
 
 
-select b.*, a.Decil as DecilAñoAnterior, a.PMNPAñoAnterior into #var3
+select b.*, a.Decil as DecilAñoAnterior, a.PDPAñoAnterior into #var3
 from #decil a inner join #var2 b on b.PKEbelista = a.PKEbelista
 
 select * from #var3
@@ -109,7 +110,7 @@ select a.PkEbelista, sum(RealVtaMNNeto/Realtcpromedio) as vta, count(distinct a.
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_FSTAEBECAM b  on a.PkEbelista = b.PkEBELISTA and a.CodPais = b.CodPais
 inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA c on  a.PKTipoOferta = c.PKTipoOferta  and a.CodPais = c.CodPais 
 inner join #ventascons d on a.PKEbelista =d.PKEbelista
-where a.CodPais = 'GT' 
+where a.CodPais = 'PE' 
 and CodTipoProfit = '01'
 and a.AnioCampana = '201713'
 and a.AnioCampana = a.AnioCampanaRef
@@ -138,7 +139,7 @@ select A.PkEbelista, AnioCampana, count( distinct (CONCAT(DesMarca,' ', DesCateg
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA b on a.PKTipoOferta = b.PKTipoOferta  and a.CodPais = b.CodPais
 inner join [DWH_ANALITICO].DBO.DWH_DPRODUCTO c on a.PkProducto = c.PkProducto and a.CodPais = c.CodPais
 inner join #ventascons d on a.PKEbelista = d.PKEbelista 
-where a.CodPais = 'GT'  and AnioCampana in ('201713','201712','201711') and AnioCampana = AnioCampanaRef and CodTipoProfit = '01'
+where a.CodPais = 'PE'  and AnioCampana in ('201713','201712','201711') and AnioCampana = AnioCampanaRef and CodTipoProfit = '01'
 GROUP BY A.PKEbelista, AnioCampana
 
 
@@ -160,7 +161,7 @@ drop table #PPU
 select  a.PKEbelista, AnioCampana, count(RealVtaMNNeto) as qprod, sum(RealVtaMNNeto/Realtcpromedio) as vta, sum(RealVtaMNNeto/Realtcpromedio)/count(RealVtaMNNeto) as PPU into #PPU
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA b on a.PKTipoOferta = b.PKTipoOferta  and a.CodPais = b.CodPais
 inner join #ventascons d on a.PKEbelista = d.PKEbelista 
-where a.CodPais = 'GT'  and AnioCampana in ('201713','201712','201711') and AnioCampana = AnioCampanaRef and CodTipoProfit = '01' and RealVtaMNNeto > 0
+where a.CodPais = 'PE'  and AnioCampana in ('201713','201712','201711') and AnioCampana = AnioCampanaRef and CodTipoProfit = '01' and RealVtaMNNeto > 0
 group by a.PKEbelista, AnioCampana
 order by a.PkEbelista, AnioCampana
 
@@ -203,7 +204,7 @@ from #TraspUnidades a inner join #var6 b on b.PKEbelista = a.PKEbelista
 SELECT d.*, FlagIpUnicoZona into #var8
 FROM [DWH_ANALITICO].DBO.DWH_FSTAEBECAM a 
 inner join #var7 d on a.PKEbelista = d.PKEbelista 
-where CodPais = 'GT'  and AnioCampana = '201713' 
+where CodPais = 'PE'  and AnioCampana = '201713' 
 
 
 
@@ -212,7 +213,7 @@ where CodPais = 'GT'  and AnioCampana = '201713'
 drop table #PD
 SELECT a.PkEbelista, AnioCampana, FlagCompraOPT + FlagCompraODD + FlagCompraOF + FlagCompraFDC + FlagCompraSR as PalancaDigital into #PD
 FROM [DWH_ANALITICO].DBO.DWH_FSTAEBECAM a inner join #ventascons b on a.PKEbelista = B.PKEbelista
-where CodPais = 'GT'  and AnioCampana in ('201713', '201712', '201711')
+where CodPais = 'PE'  and AnioCampana in ('201713', '201712', '201711')
 order by a.PkEBELISTA
 
 
@@ -237,11 +238,11 @@ inner join #var9 c on c.PKEbelista = b.PKEbelista
 select * from #var10
 
 ---------VAR 11-----------
-drop table CR_INPUT1_PDP
-select b.*, a.FechaNacimiento into CR_INPUT1_PDP
+drop table CR_INPUT1_PDP_PE
+select b.*, a.FechaNacimiento into CR_INPUT1_PDP_PE
 from [DWH_ANALITICO].DBO.DWH_DEBELISTA a inner join #var10 b on a.PKEbelista = b.PKEbelista 
-where CodPais = 'GT'
+where CodPais = 'PE'
 
-select * from CR_INPUT1_PDP
+select * from CR_INPUT1_PDP_PE
 													
 						
