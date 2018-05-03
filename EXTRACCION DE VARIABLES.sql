@@ -1,6 +1,7 @@
 declare @CodPais CHAR(2)
-set @CodPais = 'PE'
+set @CodPais = 'SV'
 
+use DATALAB
 ---------VAR OBJETIVO-----------
 drop table #cosechaestablecidas
 select CodPais, AnioCampana, PkEbelista, CodComportamientoRolling into #cosechaestablecidas
@@ -172,7 +173,7 @@ from #cf_decil1 a inner join #var4 b on b.PKEbelista = a.PKEbelista
 
 
 ---------VAR 5-----------
-
+drop table #MCT
 select A.PkEbelista, AnioCampana, count( distinct (CONCAT(DesMarca,' ', DesCategoria,' ', DesTipoSolo))) as DiferentesMCT into #MCT
 from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA b on a.PKTipoOferta = b.PKTipoOferta  and a.CodPais = b.CodPais
 inner join [DWH_ANALITICO].DBO.DWH_DPRODUCTO c on a.PkProducto = c.PkProducto and a.CodPais = c.CodPais
@@ -273,11 +274,11 @@ from #PD a right join #var8 b on b.PKEbelista = a.PKEbelista
 select * from #var9
 
 ---------VAR 10-----------
+drop table #var10
 select c.*, b.CodComportamientoRolling into #var10
 from #ventascons a inner join #cosechaestablecidas b on a.PkEBELISTA = b.PkEBELISTA
 inner join #var9 c on c.PKEbelista = b.PKEbelista
 
-select * from #var10
 ---------VAR 11-----------
 drop table #var11
 select b.*, a.FechaNacimiento into #var11
@@ -296,11 +297,14 @@ and PKEbelista IN (SELECT PKEbelista from #ventascons)
 group by PKEbelista, DesMarca
 ORDER BY PKEbelista, DesMarca
 
+drop table #total
 select PkEbelista, sum(qprod) as total_prod into #total
 from #marcas
 group by PkEbelista
 ORDER BY PKEbelista
 
+
+drop table #share
 select a.pkebelista, a.desmarca, cast(qprod as decimal)/total_prod as share_marca into #share 
 from #marcas a inner join #total b on a.PkEbelista = b.PkEbelista
 order by pkebelista
@@ -324,11 +328,28 @@ select a.*, b.AnioCampanaPrimerPedido, b.AnioCampanaPrimerPedWeb, b.AnioCampanaI
 from #var12 a left join DWH_ANALITICO.dbo.DWH_DEBELISTA b on a.PkEbelista = b.PKEbelista 
 where CodPais = @CodPais
 
-
 select *, case when CYZONE is not null then CYZONE else 0 end CYZONE_SH,
  case when ESIKA is not null then ESIKA else 0 end ESIKA_SH,
- case when LBEL is not null then LBEL else 0 end LBEL_SH  into CR_INPUT_V2_PE from #var13
+ case when LBEL is not null then LBEL else 0 end LBEL_SH  into CR_INPUT_V2_SV from #var13
+
+ select * from CR_INPUT_V2_SV
 
 
-select * from CR_INPUT_V2_PE
 
+ ------CARACTERISTICAS DE LA CAMPAÑA----
+ 
+ drop table #vtas3camp
+select a.PkEbelista, a.AnioCampana, sum(RealVtaMNNeto/Realtcpromedio) as vta
+into #vtas3camp
+from [DWH_ANALITICO].DBO.DWH_FVTAPROEBECAM a 
+inner join [DWH_ANALITICO].DBO.DWH_FSTAEBECAM b  
+on a.PkEbelista = b.PkEBELISTA and a.CodPais = b.CodPais and a.AnioCampana = b.AnioCampana
+inner join [DWH_ANALITICO].DBO.DWH_DTIPOOFERTA c on  a.PKTipoOferta = c.PKTipoOferta  and a.CodPais = c.CodPais 
+where a.CodPais = 'GT' 
+and RealVtaMNNeto > 0
+and a.PkEbelista in (select PkEbelista from #cosechaestablecidas)
+and CodTipoProfit = '01'
+and a.AnioCampana in ('201710','201711', '201712', '201713', '201715')
+and a.AnioCampana = a.AnioCampanaRef
+group by a.PkEbelista, a.AnioCampana
+order by PkEBelista, AnioCampana
